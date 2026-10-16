@@ -39,7 +39,7 @@
     <a id="abrir" href="#" target="_blank" rel="noopener">Abrir en el navegador</a>
   </div>
 </div>
-<iframe id="crm" title="CRM MOTO STOP" allow="clipboard-write"></iframe>
+<iframe id="crm" title="CRM MOTO STOP" allow="clipboard-write" credentialless></iframe>
 <script>
   // Links del CRM (Apps Script). "?prueba" abre el link de prueba.
   var CRM = {
@@ -51,10 +51,18 @@
   var splash = document.getElementById('splash');
   document.getElementById('abrir').href = url;
 
-  // El CRM avisa con un mensaje cuando carga bien dentro de la app. Si en
-  // este telefono Google no lo deja abrir dentro de la app (pasa con algunas
-  // cuentas de Google), se abre el CRM directo y se recuerda por 7 dias.
-  var CLAVE = 'ms_directo';
+  // El CRM se abre "sin credenciales" (sin cookies de Google). Asi no falla en
+  // telefonos con varias cuentas de Google abiertas. Como su almacenamiento se
+  // borra al cerrar la app, la app guarda la sesion y el tema (DATOS) y se los
+  // devuelve al CRM cada vez que abre.
+  var DATOS = 'ms_datos';
+  function leerDatos() {
+    try { return JSON.parse(localStorage.getItem(DATOS) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function esCRM(origen) { return /\.googleusercontent\.com$/.test(origen); }
+
+  // Si a pesar de todo el CRM no carga dentro de la app, se abre directo.
+  var CLAVE = 'ms_directo2';
   var listo = false;
   function directo() {
     try { localStorage.setItem(CLAVE, String(Date.now())); } catch (e) {}
@@ -63,18 +71,24 @@
   var marca = 0;
   try { marca = Number(localStorage.getItem(CLAVE)) || 0; } catch (e) {}
   if (/[?&]reintentar\b/.test(location.search)) marca = 0;
-  if (marca && Date.now() - marca < 7 * 864e5) {
+  if (marca && Date.now() - marca < 864e5) {
     location.replace(url);
   } else {
     window.addEventListener('message', function (e) {
-      if (e.data && e.data.motostop === 'crm-ok' && !listo) {
-        listo = true;
-        try { localStorage.removeItem(CLAVE); } catch (er) {}
-        setTimeout(function () { splash.classList.add('fuera'); }, 300);
+      if (!e.data || !esCRM(e.origin)) return;
+      if (e.data.motostop === 'crm-ok') {
+        try { e.source.postMessage({ motostop: 'datos', datos: leerDatos() }, e.origin); } catch (er) {}
+        if (!listo) {
+          listo = true;
+          try { localStorage.removeItem(CLAVE); } catch (er) {}
+          setTimeout(function () { splash.classList.add('fuera'); }, 300);
+        }
+      } else if (e.data.motostop === 'guardar') {
+        try { localStorage.setItem(DATOS, JSON.stringify(e.data.datos || {})); } catch (er) {}
       }
     });
     frame.addEventListener('load', function () {
-      setTimeout(function () { if (!listo) directo(); }, 6000);
+      setTimeout(function () { if (!listo) directo(); }, 8000);
     });
     setTimeout(function () {
       if (!listo) {
@@ -82,6 +96,8 @@
         document.getElementById('error').style.display = 'block';
       }
     }, 30000);
+    try { frame.credentialless = true; } catch (e) {}
+    frame.setAttribute('credentialless', '');
     frame.src = url;
   }
   if ('serviceWorker' in navigator) {
