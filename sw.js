@@ -1,6 +1,6 @@
 // Service worker minimo: guarda la pantalla de carga para abrir sin demora.
 // El CRM en si (Apps Script) siempre se carga en vivo desde Google.
-var CACHE = 'motostop-v1';
+var CACHE = 'motostop-v2';
 var ARCHIVOS = ['./', 'index.html', 'manifest.webmanifest', 'apple-touch-icon.png'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ARCHIVOS); }));

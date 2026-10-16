@@ -50,18 +50,40 @@
   var frame = document.getElementById('crm');
   var splash = document.getElementById('splash');
   document.getElementById('abrir').href = url;
+
+  // El CRM avisa con un mensaje cuando carga bien dentro de la app. Si en
+  // este telefono Google no lo deja abrir dentro de la app (pasa con algunas
+  // cuentas de Google), se abre el CRM directo y se recuerda por 7 dias.
+  var CLAVE = 'ms_directo';
   var listo = false;
-  frame.addEventListener('load', function () {
-    listo = true;
-    setTimeout(function () { splash.classList.add('fuera'); }, 400);
-  });
-  setTimeout(function () {
-    if (!listo) {
-      document.getElementById('cargando').style.display = 'none';
-      document.getElementById('error').style.display = 'block';
-    }
-  }, 25000);
-  frame.src = url;
+  function directo() {
+    try { localStorage.setItem(CLAVE, String(Date.now())); } catch (e) {}
+    location.replace(url);
+  }
+  var marca = 0;
+  try { marca = Number(localStorage.getItem(CLAVE)) || 0; } catch (e) {}
+  if (/[?&]reintentar\b/.test(location.search)) marca = 0;
+  if (marca && Date.now() - marca < 7 * 864e5) {
+    location.replace(url);
+  } else {
+    window.addEventListener('message', function (e) {
+      if (e.data && e.data.motostop === 'crm-ok' && !listo) {
+        listo = true;
+        try { localStorage.removeItem(CLAVE); } catch (er) {}
+        setTimeout(function () { splash.classList.add('fuera'); }, 300);
+      }
+    });
+    frame.addEventListener('load', function () {
+      setTimeout(function () { if (!listo) directo(); }, 6000);
+    });
+    setTimeout(function () {
+      if (!listo) {
+        document.getElementById('cargando').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+      }
+    }, 30000);
+    frame.src = url;
+  }
   if ('serviceWorker' in navigator) {
     try { navigator.serviceWorker.register('sw.js'); } catch (e) {}
   }
