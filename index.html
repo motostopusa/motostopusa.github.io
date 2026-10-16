@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MOTO STOP</title>
+<meta name="description" content="CRM de ventas MOTO STOP">
+<meta name="theme-color" content="#0E0F11">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="MOTO STOP">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #0E0F11; color: #F2F2EE;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+    box-sizing: border-box; overflow: hidden; }
+  #crm { display: block; width: 100%; height: 100%; border: 0; background: #0E0F11; }
+  #splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 18px; background: #0E0F11; transition: opacity .3s; z-index: 2; }
+  #splash img { width: 112px; height: 112px; border-radius: 24px; }
+  #splash p { margin: 0; font-size: 14px; color: #A3A7AE; }
+  #splash.fuera { opacity: 0; pointer-events: none; }
+  #error { display: none; text-align: center; padding: 0 28px; }
+  #error a { display: inline-block; margin-top: 12px; padding: 12px 20px; border-radius: 10px;
+    background: #FF6A1A; color: #111; font-weight: 700; text-decoration: none; }
+</style>
+</head>
+<body>
+<div id="splash" role="status">
+  <img src="apple-touch-icon.png" alt="">
+  <p id="cargando">Cargando el CRM&hellip;</p>
+  <div id="error">
+    <p>No se pudo abrir el CRM. Revis&aacute; la conexi&oacute;n.</p>
+    <a id="abrir" href="#" target="_blank" rel="noopener">Abrir en el navegador</a>
+  </div>
+</div>
+<iframe id="crm" title="CRM MOTO STOP" allow="clipboard-write"></iframe>
+<script>
+  // Links del CRM (Apps Script). "?prueba" abre el link de prueba.
+  var CRM = {
+    equipo: 'https://script.google.com/macros/s/AKfycbxKRXXEal8_400Tsx0dyXN3HeVNEXbEHbCHnbWPG0wPevGHlfgg2I5jyNe0oqU8ZIk/exec',
+    prueba: 'https://script.google.com/macros/s/AKfycbxm-OoVm_Bk1xOknBTnrcCykjLr2xSXZXJszf9h8ZAWnCCigdfkDIkqvYoemyZOPRjY7Q/exec'
+  };
+  var url = /[?&]prueba\b/.test(location.search) ? CRM.prueba : CRM.equipo;
+  var frame = document.getElementById('crm');
+  var splash = document.getElementById('splash');
+  document.getElementById('abrir').href = url;
+  var listo = false;
+  frame.addEventListener('load', function () {
+    listo = true;
+    setTimeout(function () { splash.classList.add('fuera'); }, 400);
+  });
+  setTimeout(function () {
+    if (!listo) {
+      document.getElementById('cargando').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+    }
+  }, 25000);
+  frame.src = url;
+  if ('serviceWorker' in navigator) {
+    try { navigator.serviceWorker.register('sw.js'); } catch (e) {}
+  }
+</script>
+</body>
+</html>
